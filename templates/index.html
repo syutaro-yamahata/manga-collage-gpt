@@ -1,0 +1,13 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head><title>コラ画像作成GPT</title></head>
+<body>
+  <h1>コラ画像を作る</h1>
+  <form action="/generate" method="post" enctype="multipart/form-data">
+    <input type="file" name="image"><br><br>
+    <textarea name="instruction" rows="4" cols="40" placeholder="画像をどう編集したいか書いてください"></textarea><br><br>
+    <input type="submit" value="作成開始">
+  </form>
+</body>
+</html>
