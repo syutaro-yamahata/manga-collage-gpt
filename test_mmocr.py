@@ -1,13 +1,17 @@
 from mmocr.apis import MMOCRInferencer
+import glob
 
-# テキスト検出モデル（吹き出しなどの文字領域を検出）
-ocr = MMOCRInferencer('dbnet')
+inferencer = MMOCRInferencer(
+    det='dbnetpp',
+    rec='sar',
+    device='cuda'  # GPU
+)
 
-# 対象画像を指定
-image_path = "debug_ocr.png"  # ← ここを実際の画像名に置き換えてOK
+for path in glob.glob("balloons/*.png"):
+    result = inferencer(path)
+    pred = result["predictions"][0]
 
-# 推論を実行（結果画像を保存）
-result = ocr(image_path, save_vis=True)
-
-# 結果を出力
-print(result['predictions'])
+    print("🗨", path)
+    for text, score in zip(pred["rec_texts"], pred["rec_scores"]):
+        if score >= 0.4:
+            print("  ", text, f"({score:.2f})")

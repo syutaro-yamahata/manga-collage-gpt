@@ -1,56 +1,94 @@
-# Flask本体と各種ユーティリティ関数をインポート
-from flask import Flask, render_template, request, send_file
-import sys, os
+# Flask本体と各種ユーティリティ
+from flask import Flask, render_template, request
+import os
+import sys
+import uuid
 
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "FuriganaDetection/lib")))
+# パス調整
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(BASE_DIR)
 
 from dotenv import load_dotenv
-from collage import fill_all_speech_balloons_white   # 自作の画像処理モジュールをインポート
-from gpt_helper import parse_instruction_with_gpt  # GPT連携はコメントアウト中
+from collage import fill_all_speech_balloons_white
+from gpt_helper import parse_instruction_with_gpt
 
-# .envファイルの環境変数を読み込む（APIキーなど）
+# 環境変数読み込み
 load_dotenv()
 
-# Flaskアプリケーションのインスタンス作成
 app = Flask(__name__)
-# アップロードされた画像を保存するディレクトリの指定
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# ルートURLにアクセスされたときにindex.htmlを表示
-@app.route('/')
+# ディレクトリ
+UPLOAD_DIR = os.path.join("static", "uploads")
+OUTPUT_DIR = os.path.join("static", "outputs")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# トップページ
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-# フォーム送信時（POST）に呼び出されるエンドポイント
-@app.route('/generate', methods=['POST'])
+# 画像生成
+@app.route("/generate", methods=["POST"])
 def generate():
-    # フォームから送られた画像ファイルとテキスト指示を取得
-    image = request.files['image']
-    instruction = request.form['instruction']
-    
-    # 画像を指定フォルダに保存
-    image_path = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
-    image.save(image_path)
+    image = request.files.get("image")
+    instruction = request.form.get("instruction", "")
 
-    # GPTを使わず、手動で置換ペアを定義（「オレ」→「私」）
-    #replacements = [
-       # {"from": "オレ", "to": "私"},
-       # {"from": "勝利", "to": "敗北"}
-    # ]
-    #print("固定置換ペア:", replacements)
+    if not image:
+        return "画像がアップロードされていません", 400
 
-    # GPTを使いたい場合は有効にする ↓
-    
+    # ファイル名をユニークに
+    uid = uuid.uuid4().hex
+    input_path = os.path.join(UPLOAD_DIR, f"{uid}_input.png")
+    output_path = os.path.join(OUTPUT_DIR, f"{uid}_result.png")
+
+    image.save(input_path)
+
+    # --- GPT連携 ---
     replacements = parse_instruction_with_gpt(instruction)
-    print("GPTが抽出した置換ペア:", replacements)
+    print("GPT置換ペア:", replacements)
 
-    # 画像処理（OCR → テキスト置換）を実行
-    result_path = process_image(image_path, replacements)
+    # GPTが何も返さなかった場合の保険
+    if not replacements:
+        replacements = []
 
-    # 生成された画像を返却（ブラウザに表示）
-    return send_file(result_path, mimetype='image/png')
+    # --- 画像処理 ---
+    fill_all_speech_balloons_white(
+        image_path=input_path,
+        output_path=output_path,
+        replacements=replacements
+    )
 
-# Flaskアプリを開発モードで起動
-if __name__ == '__main__':
+    # 元画像と結果画像を画面に返す
+    return render_template(
+        "index.html",
+        original_image=input_path,
+        result_image=output_path,
+        instruction=instruction
+    )
+
+# 起動
+if __name__ == "__main__":
     app.run(debug=True)
+
+def run_mmocr_on_balloons(balloon_images):
+    # ★ ここで初めて import ★
+    from mmocr.apis import MMOCRInferencer
+
+    ocr = MMOCRInferencer(
+        det="dbnetpp",
+        rec="sar",
+        device="cpu"  # WindowsはCPU安定
+    )
+
+    results = []
+    for path in balloon_images:
+        out = ocr(path)
+        pred = out["predictions"][0]
+        texts = [
+            t for t, s in zip(pred["rec_texts"], pred["rec_scores"])
+            if s >= 0.4
+        ]
+        results.append(texts)
+    return results
+

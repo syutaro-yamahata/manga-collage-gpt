@@ -1,4 +1,23 @@
-echo "venv/" >> .gitignore
-echo ".venv/" >> .gitignore
-echo "__pycache__/" >> .gitignore
-echo "*.pyc" >> .gitignore
+# Python関連
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+venv_ocr/
+
+# 環境変数・認証情報（重要！）
+.env
+credentials.json
+
+# 学習済みモデル・重みファイル（サイズが大きいため）
+*.pt
+models/*.pt
+
+# デバッグ用・出力用画像
+debug_*.png
+balloons/
+runs/
+
+# OS固有のファイル
+.DS_Store
+Thumbs.db

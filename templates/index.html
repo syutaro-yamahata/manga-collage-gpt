@@ -1,13 +1,233 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html>
-<head><title>コラ画像作成GPT</title></head>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manga Collage GPT</title>
+    <style>
+        /* マンガ・アメコミ風フォント */
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+JP:wght@900&display=swap');
+
+        :root {
+            --primary-yellow: #ffdf00;
+            --primary-red: #ff3131;
+            --border-color: #000;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+            background-color: #f0f0f0;
+            /* ハーフトーンのようなドット背景 */
+            background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+            background-size: 15px 15px;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 全体を囲むメインのコマ */
+        .manga-page {
+            max-width: 1000px;
+            width: 100%;
+            background: #fff;
+            border: 6px solid var(--border-color);
+            box-shadow: 15px 15px 0px var(--border-color);
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 集中線の演出（デコレーション） */
+        .manga-page::before {
+            content: "";
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: repeating-conic-gradient(from 0deg, transparent 0deg 2deg, rgba(0,0,0,0.03) 2deg 4deg);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .content-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* タイトル：擬音・ロゴ風 */
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-family: 'Bangers', 'Noto Sans JP', cursive;
+            font-size: 4rem;
+            color: var(--primary-red);
+            text-shadow: 4px 4px 0px var(--border-color), -1px -1px 0px var(--border-color);
+            letter-spacing: 4px;
+            margin: 0;
+            transform: skew(-5deg) rotate(-2deg);
+            display: inline-block;
+        }
+
+        /* フォームセクション */
+        .input-section {
+            background: var(--primary-yellow);
+            border: 4px solid var(--border-color);
+            padding: 30px;
+            margin-bottom: 40px;
+            transform: rotate(1deg);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ファイル選択のカスタマイズ */
+        input[type="file"] {
+            background: #fff;
+            border: 3px dashed var(--border-color);
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        /* 入力欄：吹き出し風の角丸と太枠 */
+        input[type="text"] {
+            border: 4px solid var(--border-color);
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 5px 5px 0px var(--border-color);
+        }
+
+        /* 生成ボタン：ド派手なアクション風 */
+        button {
+            background: var(--primary-red);
+            color: white;
+            border: 4px solid var(--border-color);
+            padding: 15px 45px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 8px 8px 0px var(--border-color);
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px var(--border-color);
+        }
+
+        button:active {
+            background: #000;
+        }
+
+        /* 画像比較エリア：コマ割り */
+        .comic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .comic-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2.5rem; }
+        }
+
+        .panel {
+            border: 5px solid var(--border-color);
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+        }
+
+        /* コマのラベル（擬音風） */
+        .panel-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: var(--border-color);
+            color: #fff;
+            padding: 5px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            z-index: 2;
+            clip-path: polygon(0 0, 100% 0, 85% 100%, 0% 100%);
+        }
+
+        .panel img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.3s;
+        }
+
+        .panel:hover img {
+            transform: scale(1.05);
+        }
+
+        /* 画面下の装飾 */
+        .footer-note {
+            text-align: right;
+            font-weight: bold;
+            margin-top: 20px;
+            font-style: italic;
+        }
+
+    </style>
+</head>
 <body>
-  <h1>コラ画像を作る</h1>
-  <form action="/generate" method="post" enctype="multipart/form-data">
-    <input type="file" name="image"><br><br>
-    <textarea name="instruction" rows="4" cols="40" placeholder="画像をどう編集したいか書いてください"></textarea><br><br>
-    <input type="submit" value="作成開始">
-  </form>
+
+<div class="manga-page">
+    <div class="content-inner">
+        <header>
+            <h1>MANGA COLLAGE GPT!!</h1>
+        </header>
+
+        <section class="input-section">
+            <form action="/generate" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="file" name="image" required>
+                    <input 
+                        type="text" 
+                        name="instruction" 
+                        placeholder="例：オレ → 私（セリフ書き換え）" 
+                        value="{{ instruction | default('') }}"
+                    >
+                </div>
+                <div style="text-align: center; margin-top: 10px;">
+                    <button type="submit">GENERATE!!</button>
+                </div>
+            </form>
+        </section>
+
+        {% if original_image and result_image %}
+        <div class="comic-grid">
+            <div class="panel">
+                <div class="panel-label">BEFORE</div>
+                <img src="{{ original_image }}" alt="Original">
+            </div>
+
+            <div class="panel" style="transform: rotate(-1deg);">
+                <div class="panel-label" style="background: var(--primary-red);">AFTER</div>
+                <img src="{{ result_image }}" alt="Result">
+            </div>
+        </div>
+        <p class="footer-note">To be continued...</p>
+        {% endif %}
+    </div>
+</div>
+
 </body>
 </html>
