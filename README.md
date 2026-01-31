@@ -1,52 +1,52 @@
-Manga Collage GPT (Phase 1: Speech Balloon Eraser)
-漫画の吹き出しをAIで自動検出し、枠線を保持したまま中のセリフをきれいに消去するツールです。 現在は、高品質な「白抜き」を実現するフェーズにあります。
+# 🗨️ Manga Collage GPT
+### Phase 1: High-Precision Speech Balloon Eraser
 
- 現在の到達点
-画像内の吹き出しを自動で特定し、「元の絵（枠線）を壊さずに」 中の文字だけを白く塗りつぶす画像処理パイプラインを構築しました。
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-Framework-000000.svg?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![YOLOv8](https://img.shields.io/badge/AI-YOLOv8-FF385C.svg?style=for-the-badge&logo=ultralytics&logoColor=white)](https://ultralytics.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
- 主な機能と技術的特徴
-AI吹き出し検出: YOLOv8 モデルを使用して、様々な形状の吹き出しを瞬時に特定します。
+> **漫画の「吹き出し」をAIでハックする。** > 枠線や背景を一切傷つけず、中のセリフだけを魔法のように消去。次世代の漫画編集・翻訳パイプラインの第一歩がここに。
 
-枠線保護ロジック: YOLOの検出範囲の端10%を保護領域とし、吹き出しの輪郭が消失するのを防いでいます。
+---
 
-高精度な文字消去: OpenCVを活用し、枠内の「黒い文字（ドット）」のみを狙って白に変換。ベタ塗り感のない自然な仕上がりを実現しました。
+## 🎨 現在の到達点: "Perfect Blanking"
+現在は **Phase 1: Speech Balloon Eraser** です。  
+単なるベタ塗りではなく、AIが「マンガの構造」を理解し、枠線を守りながら中身をクリアにする高品質な画像処理パイプラインを構築しました。
 
-Google Cloud Vision 連携: 裏側ではOCR（文字認識）の準備も整っており、セリフの自動取得が可能です。
+---
 
-🛠 技術スタック
-Language: Python 3.x
+## 🔄 技術フロー (Technical Workflow)
 
-Framework: Flask (Web Interface)
+本プロジェクトは、以下の多段的なプロセスを経て「高品質な白抜き」を実現しています。
 
-AI/ML: YOLOv8 (ultralytics), Azure OpenAI
+```mermaid
+graph TD
+    %% ユーザー入力
+    User((ユーザー)) -- "1. 元画像アップロード" --> WebApp[Flask Web Interface]
 
-Image Processing: OpenCV, Pillow (PIL)
+    subgraph "AI解析フェーズ (Analysis)"
+        WebApp --> YOLO[YOLOv8: 吹き出し検出]
+        YOLO -- "2. 座標取得" --> Analysis
+        Analysis["・吹き出しのバウンディングボックス<br>・枠線の位置特定"]
+    end
 
-Cloud API: Google Cloud Vision API
+    subgraph "画像処理フェーズ (Processing)"
+        Analysis --> Logic{枠線保護ロジック}
+        Logic -- "3. 外周10%をマスク除外" --> Cleaning[OpenCV: 文字消去]
+        Cleaning --> Fill[高精度白抜き処理]
+    end
 
- セットアップ・起動方法
-1. 依存ライブラリのインストール
-Bash
+    subgraph "外部連携準備 (Extensions)"
+        Fill --> VisionAPI[Google Cloud Vision: OCR]
+        VisionAPI --> GPT[Azure OpenAI: 文脈理解/翻訳]
+    end
 
-pip install flask pillow opencv-python ultralytics google-cloud-vision openai python-dotenv
-2. 認証情報とモデルの配置
-credentials.json: Google Cloud サービスアカウントキー
-
-.env: Azure OpenAI のエンドポイントとキーを記述
-
-models/best.pt: 学習済みの YOLO モデル
-
-3. 実行
-Bash
-
-python app.py
-http://127.0.0.1:5000 にアクセスして画像をアップロードしてください。
-
-📈 今後のロードマップ
-[x] YOLOによる吹き出しの自動検出
-
-[x] 枠線を保持した文字消去 (現在地)
-
-[ ] 縦書き/横書きを考慮した自動再描画
-
-[ ] GPTによるセリフの翻訳・トーン変換
+    %% 出力
+    Fill -- "4. 編集済み画像 (Blanked)" --> User
+    
+    style User fill:#ffdf00,stroke:#000,stroke-width:2px
+    style WebApp fill:#fff,stroke:#000,stroke-width:2px
+    style YOLO fill:#ff3131,color:#fff,stroke:#000,stroke-width:2px
+    style Cleaning fill:#ff3131,color:#fff,stroke:#000,stroke-width:2px
+    style Logic fill:#f0f0f0,stroke:#000,stroke-width:2px
